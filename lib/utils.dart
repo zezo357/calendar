@@ -6,9 +6,10 @@ import 'package:table_calendar/table_calendar.dart';
 class Event {
   final String title;
   final int priority;
+  final int timeRequired;
   final DateTime dueDate;
 
-  const Event(this.title,this.dueDate,{this.priority=1});
+  const Event(this.title,this.dueDate,this.timeRequired,{this.priority=1});
 
   @override
   String toString() => title;
@@ -20,20 +21,23 @@ class Event {
 final kEvents = LinkedHashMap<DateTime, List<Event>>(
   equals: isSameDay,
   hashCode: getHashCode,
-)..addAll(createEvents(200));
+);//..addAll(createEvents(200));
 Map<DateTime, List<Event>> createEvents(int count){
   Map<DateTime, List<Event>> events= {};
   for(int i=0; i<count;i++){
 
     Random random = Random();
     DateTime key=DateTime.utc(DateTime.now().year,random.nextInt(12)+1,random.nextInt(28)+1);
-    if(events.containsKey(key)){
-      events[key]!.add(Event('Event: $i',key,priority: random.nextInt(50)+1));
-    }else{
-    events[key]=[Event('Event $i',key,priority: random.nextInt(50)+1)];
-    }
+    addEvent(key,Event('Event: $i',key,random.nextInt(200)+1,priority: random.nextInt(50)+1));
   }
   return events;
+}
+void addEvent(DateTime key,Event event){
+  if(kEvents.containsKey(key)){
+    kEvents[key]!.add(event);
+  }else{
+    kEvents[key]=[event];
+  }
 }
 /*
 final _kEventSource = Map.fromIterable(List.generate(200, (index) => index),

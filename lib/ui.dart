@@ -18,11 +18,14 @@ class _TableEventsExampleState extends State<TableEventsExample> {
   DateTime? _selectedDay;
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
+  TextEditingController eventText=TextEditingController();
+  TextEditingController eventPriority=TextEditingController();
+  TextEditingController eventTimeRequired=TextEditingController();
 
   @override
   void initState() {
     super.initState();
-
+    createEvents(200);
     _selectedDay = _focusedDay;
     _selectedEvents = ValueNotifier(_getEventsForDay(_selectedDay!));
   }
@@ -50,6 +53,8 @@ class _TableEventsExampleState extends State<TableEventsExample> {
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
     if (!isSameDay(_selectedDay, selectedDay)) {
       setState(() {
+        //print("selectedDay"+selectedDay.toString());
+        //print("focusedDay"+focusedDay.toString());
         _selectedDay = selectedDay;
         _focusedDay = focusedDay;
         _rangeStart = null; // Important to clean those
@@ -82,16 +87,103 @@ class _TableEventsExampleState extends State<TableEventsExample> {
   static const List<String> popMenuOptionsSearchOptions=[
     "Sort using priority",
     "Sort using time",
+    "Sort using time Required",
     "Get month events"
   ];
   List<Event> priority(List<Event> events) {
     events.sort((a, b) => (a.priority).compareTo(b.priority));
-    return events;
+    return events.reversed.toList();
     }
 
-  List<Event> time(List<Event> events) {
+  List<Event> dueDate(List<Event> events) {
     events.sort((a, b) => (a.dueDate).compareTo(b.dueDate));
     return events;
+  }
+  List<Event> timeRequired(List<Event> events) {
+    events.sort((a, b) => (a.timeRequired).compareTo(b.timeRequired));
+    return events;
+  }
+  Future<void> addEventAtDay() async {
+    await showDialog(builder: (context) => new Dialog(
+      backgroundColor: Colors.blueGrey[100],
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.blueGrey[100],
+          borderRadius: BorderRadius.circular(15)
+
+        ),
+        height: 320,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Container(
+                padding: EdgeInsets.all(10),
+                margin: EdgeInsets.all(5),
+                child: TextFormField(
+                    controller: eventText,
+                    autovalidateMode: AutovalidateMode.disabled,
+                    decoration: InputDecoration(
+                      labelText: "Event Name",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                      focusedBorder:OutlineInputBorder(borderRadius: BorderRadius.circular(15),),
+                    )
+                )
+            ),
+            Container(
+                padding: EdgeInsets.all(10),
+                margin: EdgeInsets.all(5),
+                child: TextFormField(
+                    keyboardType: TextInputType.number,
+                    controller: eventPriority,
+
+                    autovalidateMode: AutovalidateMode.disabled,
+                    decoration: InputDecoration(
+                      labelText: "Event Priority",
+
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                      focusedBorder:OutlineInputBorder(borderRadius: BorderRadius.circular(15),),
+                    )
+                )
+            ),
+            Container(
+                padding: EdgeInsets.all(10),
+                margin: EdgeInsets.all(5),
+                child: TextFormField(
+                    keyboardType: TextInputType.number,
+                    controller: eventTimeRequired,
+
+                    autovalidateMode: AutovalidateMode.disabled,
+                    decoration: InputDecoration(
+                      labelText: "Event Time Required",
+
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                      focusedBorder:OutlineInputBorder(borderRadius: BorderRadius.circular(15),),
+                    )
+                )
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                primary: Colors.black54, // background
+                onPrimary: Colors.white, // foreground
+              ),
+              child: Text("Add"),
+              onPressed: (){
+
+                Navigator.pop(context);
+                setState(() {
+                  addEvent(_focusedDay, Event(eventText.text,_focusedDay,int.parse(eventTimeRequired.text ),priority: int.parse(eventPriority.text )));
+                  _selectedEvents.value = _getEventsForDay(_focusedDay);
+                });
+                eventText.text="";
+                eventPriority.text="";
+              },
+            )
+          ],
+        ),
+      ),
+
+    ), context: context);
   }
   void popUpMenuSelectionSearchSort(String selection){
     switch(selection){
@@ -99,10 +191,33 @@ class _TableEventsExampleState extends State<TableEventsExample> {
         setState(() {
         _selectedEvents.value=priority(_selectedEvents.value);
         });
+        int timeRequired=0;
+        _selectedEvents.value.forEach((element) {timeRequired+=element.timeRequired; });
+        showDialog(builder: (context) => new Dialog(
+          backgroundColor: Colors.blueGrey[100],
+          child: Container(
+            decoration: BoxDecoration(
+                color: Colors.blueGrey[100],
+                borderRadius: BorderRadius.circular(15)
+            ),
+            child: Container(
+              padding: EdgeInsets.all(10),
+              margin: EdgeInsets.all(5),
+              child: Text("Average time required: ${(timeRequired/_selectedEvents.value.length).toStringAsFixed(2)}",style: TextStyle(fontSize:20 ),),
+            ),
+          ),
+
+        ), context: context);
         break;
-      case "Sort using time":
+      case "Sort using Due Date":
         setState(() {
-          _selectedEvents.value=time(_selectedEvents.value);
+          _selectedEvents.value=dueDate(_selectedEvents.value);
+        });
+
+        break;
+      case "Sort using time Required":
+        setState(() {
+          _selectedEvents.value=timeRequired(_selectedEvents.value);
         });
         break;
       case "Get month events":
@@ -156,6 +271,13 @@ class _TableEventsExampleState extends State<TableEventsExample> {
                     style: TextStyle(color: Colors.white),
                   ),
                 ),
+                PopupMenuItem<String>(
+                  value: popMenuOptionsSearchOptions[3],
+                  child: Text(
+                    popMenuOptionsSearchOptions[3],
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
               ],
             )
           ],
@@ -192,7 +314,17 @@ class _TableEventsExampleState extends State<TableEventsExample> {
               _focusedDay = focusedDay;
             },
           ),
+      ElevatedButton(
+      style: ElevatedButton.styleFrom(
+      primary: Colors.black54, // background
+      onPrimary: Colors.white, // foreground
+    ),
+    child: Text("Add Event",
+    style: TextStyle(color: Colors.white),),
 
+        onPressed: () {addEventAtDay();
+
+    }),
           const SizedBox(height: 8.0),
           Expanded(
             child: ValueListenableBuilder<List<Event>>(
@@ -217,6 +349,7 @@ class _TableEventsExampleState extends State<TableEventsExample> {
                             Text('${value[index].title}'),
                             Text('Priority: '+'${value[index].priority}'),
                             Text('DueDate: '+'${DateFormat("dd-MM-yyyy").format(value[index].dueDate)}'),
+                            Text('Time Required: '+'${value[index].timeRequired} min'),
                           ],
                         ),
                       ),
