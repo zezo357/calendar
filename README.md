@@ -1,4 +1,4 @@
-# calendar
+# calendar with sorting based on priorty or time required or dates
 
 A new Flutter project.
 
